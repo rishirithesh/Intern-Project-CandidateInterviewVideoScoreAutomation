@@ -8,39 +8,60 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎯 Interview Evaluation Report</h1>
-        <p><strong>File:</strong> {{ filename }}</p>
-        
-        <a href="/" class="back-btn">← Upload Another Video</a>
+        <header>
+            <h1>Interview Evaluation Report</h1>
+            <p>{{ filename }}</p>
+        </header>
 
-        <!-- Final Score -->
-        <div class="final-score">
-            <h2>Final Score</h2>
-            <div class="score-circle">{{ final_score }}/100</div>
+        <div class="result-header">
+            <a href="/" class="back-btn">← Upload Another Video</a>
+
+            <!-- Final Score -->
+            <div class="final-score">
+                <h2>Final Score</h2>
+                <div class="score-circle">{{ final_score }}/100</div>
+            </div>
         </div>
 
-        <!-- Summary -->
-        <div class="card">
-            <h2>📝 Interview Summary</h2>
-            <p>{{ summary }}</p>
-        </div>
+        <div class="main-content">
+            <!-- Summary -->
+            <div class="card">
+                <h2>📝 Interview Summary</h2>
+                <p>{{ summary }}</p>
+            </div>
 
-        <!-- Transcript -->
-        <div class="card">
-            <h2>📜 Full Transcript</h2>
-            <div class="transcript">{{ transcript }}</div>
-        </div>
+            <!-- Transcript -->
+            <div class="card">
+                <h2>📜 Full Transcript</h2>
+                <div class="transcript">{{ transcript }}</div>
+            </div>
 
-        <!-- Detailed Scores -->
-        <div class="card">
-            <h2>📊 Detailed Evaluation</h2>
-            <ul class="score-list">
-                <li><strong>Vocabulary Richness</strong> <span class="score">{{ scores.vocabulary }}/100</span></li>
-                <li><strong>Sentence Complexity</strong> <span class="score">{{ scores.complexity }}/100</span></li>
-                <li><strong>Grammar Accuracy</strong> <span class="score">{{ scores.grammar }}/100</span></li>
-                <li><strong>Filler Word Control</strong> <span class="score">{{ scores.filler }}/100</span></li>
-                <li><strong>Speaking Speed</strong> <span class="score">{{ scores.speed }}/100</span></li>
-            </ul>
+            <!-- Detailed Scores -->
+            <div class="card">
+                <h2>📊 Detailed Evaluation Metrics</h2>
+                <ul class="score-list">
+                    <li>
+                        <span><strong>Vocabulary Richness</strong></span>
+                        <span class="score">{{ scores.vocabulary }}/100</span>
+                    </li>
+                    <li>
+                        <span><strong>Sentence Complexity</strong></span>
+                        <span class="score">{{ scores.complexity }}/100</span>
+                    </li>
+                    <li>
+                        <span><strong>Grammar Accuracy</strong></span>
+                        <span class="score">{{ scores.grammar }}/100</span>
+                    </li>
+                    <li>
+                        <span><strong>Filler Word Control</strong></span>
+                        <span class="score">{{ scores.filler }}/100</span>
+                    </li>
+                    <li>
+                        <span><strong>Speaking Speed</strong></span>
+                        <span class="score">{{ scores.speed }}/100</span>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </body>

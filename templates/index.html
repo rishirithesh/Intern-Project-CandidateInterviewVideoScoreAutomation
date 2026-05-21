@@ -8,22 +8,29 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎤 Interview Evaluator</h1>
-        <p class="subtitle">AI-Powered Candidate Assessment Tool</p>
+        <header>
+            <h1>Interview Evaluator</h1>
+            <p>AI-Powered Candidate Video Analysis</p>
+        </header>
 
-        <div class="upload-card">
-            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
-                <h2>Upload Candidate Interview Video</h2>
-                <p>(Max 5-10 minutes, MP4 recommended)</p>
-                <input type="file" name="video" accept="video/*" required>
-                <button type="submit" id="submitBtn">Analyze Video</button>
-            </form>
-        </div>
+        <div class="upload-section">
+            <div class="upload-card">
+                <div class="upload-icon">📹</div>
+                <h2>Upload Candidate Interview</h2>
+                <p>Supports MP4, MOV, AVI • Max 10 minutes recommended</p>
+                
+                <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+                    <input type="file" name="video" accept="video/*" required>
+                    <button type="submit" id="submitBtn">Analyze Interview</button>
+                </form>
+            </div>
 
-        <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <h3>Processing Video...</h3>
-            <p>This may take 30 seconds to 2 minutes.<br><small>First time may take longer due to AI models.</small></p>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <h3>Analyzing Video...</h3>
+                <p>Please wait while we transcribe and evaluate the interview.</p>
+                <small>First time may take longer.</small>
+            </div>
         </div>
     </div>
 
@@ -34,4 +41,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
