@@ -1,0 +1,9 @@
+flask==3.0.3
+moviepy==1.0.3
+faster-whisper==1.1.0
+transformers==4.41.2
+nltk==3.8.1
+language-tool-python==2.8.0
+pillow==10.4.0
+werkzeug==3.0.3
+setuptools==81.0.0

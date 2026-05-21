@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Models & Cache
+__pycache__/
+*.bin
+*.safetensors
+.cache/
+.huggingface/
+lightning_logs/
+
+# Video uploads
+uploads/*
+!uploads/.gitkeep
+
+# Build files
+dist/
+build/
+*.spec
+*.exe
+
+# Logs
+*.log

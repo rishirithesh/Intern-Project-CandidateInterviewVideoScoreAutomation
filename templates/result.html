@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Report - {{ filename }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Interview Evaluation Report</h1>
+        <p><strong>File:</strong> {{ filename }}</p>
+        
+        <a href="/" class="back-btn">← Upload Another Video</a>
+
+        <!-- Final Score -->
+        <div class="final-score">
+            <h2>Final Score</h2>
+            <div class="score-circle">{{ final_score }}/100</div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card">
+            <h2>📝 Interview Summary</h2>
+            <p>{{ summary }}</p>
+        </div>
+
+        <!-- Transcript -->
+        <div class="card">
+            <h2>📜 Full Transcript</h2>
+            <div class="transcript">{{ transcript }}</div>
+        </div>
+
+        <!-- Detailed Scores -->
+        <div class="card">
+            <h2>📊 Detailed Evaluation</h2>
+            <ul class="score-list">
+                <li><strong>Vocabulary Richness</strong> <span class="score">{{ scores.vocabulary }}/100</span></li>
+                <li><strong>Sentence Complexity</strong> <span class="score">{{ scores.complexity }}/100</span></li>
+                <li><strong>Grammar Accuracy</strong> <span class="score">{{ scores.grammar }}/100</span></li>
+                <li><strong>Filler Word Control</strong> <span class="score">{{ scores.filler }}/100</span></li>
+                <li><strong>Speaking Speed</strong> <span class="score">{{ scores.speed }}/100</span></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

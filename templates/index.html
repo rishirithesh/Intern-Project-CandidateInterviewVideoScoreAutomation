@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Evaluator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Interview Evaluator</h1>
+        <p class="subtitle">AI-Powered Candidate Assessment Tool</p>
+
+        <div class="upload-card">
+            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+                <h2>Upload Candidate Interview Video</h2>
+                <p>(Max 5-10 minutes, MP4 recommended)</p>
+                <input type="file" name="video" accept="video/*" required>
+                <button type="submit" id="submitBtn">Analyze Video</button>
+            </form>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <h3>Processing Video...</h3>
+            <p>This may take 30 seconds to 2 minutes.<br><small>First time may take longer due to AI models.</small></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+        });
+    </script>
+</body>
+</html> 
