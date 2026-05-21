@@ -1,4 +1,4 @@
-# 🎤 Interview Video Evaluator
+# Candidate Video Evaluator 
 
 **An AI-Powered Offline Interview Analysis Tool**
 
@@ -6,7 +6,7 @@ Built as an **Internship Project** at **Agilisium Consulting** to help automate 
 
 ---
 
-## 📋 Project Information
+## Project Information
 
 - **Intern**: Rishi Rithesh
 - **Company**: Agilisium Consulting
@@ -16,7 +16,7 @@ Built as an **Internship Project** at **Agilisium Consulting** to help automate 
 
 ---
 
-## ✨ Features
+## Features
 
 - Upload candidate interview videos (MP4, MOV, AVI)
 - Automatic audio extraction
@@ -29,7 +29,7 @@ Built as an **Internship Project** at **Agilisium Consulting** to help automate 
 
 ---
 
-## 🚀 Use Cases
+## Use Cases
 
 - Initial screening of candidates
 - Communication & soft skills assessment
@@ -39,7 +39,7 @@ Built as an **Internship Project** at **Agilisium Consulting** to help automate 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend**: Python, Flask
 - **Speech-to-Text**: Faster-Whisper (optimized)
@@ -50,7 +50,7 @@ Built as an **Internship Project** at **Agilisium Consulting** to help automate 
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```plaintext
 interview-evaluator/
