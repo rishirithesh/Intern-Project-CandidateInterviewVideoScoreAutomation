@@ -32,7 +32,10 @@ Return JSON ONLY:
                 "model": "phi3",
                 "prompt": prompt,
                 "stream": False,
-                "format": "json"
+                "format": "json",
+                "options": {
+                    "temperature": 0,
+                }
             }
         )
 
