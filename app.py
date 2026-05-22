@@ -12,7 +12,8 @@ from modules.evaluator import evaluate_candidate
 app = Flask(__name__)
 app.config.from_object(Config)
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def allowed_file(filename):
@@ -26,62 +27,76 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_video():
+
     if 'video' not in request.files:
         flash('No file uploaded')
-        return redirect(request.url)
+        return redirect(url_for('index'))
 
     file = request.files['video']
+
     if file.filename == '':
         flash('No file selected')
-        return redirect(request.url)
+        return redirect(url_for('index'))
 
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        video_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(video_path)
+    if not allowed_file(file.filename):
+        flash('Invalid file format')
+        return redirect(url_for('index'))
 
-        try:
-            print(f"🚀 Processing: {filename}")
+    filename = secure_filename(file.filename)
+    video_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(video_path)
 
-            audio_path = os.path.join(app.config['UPLOAD_FOLDER'], filename.rsplit('.', 1)[0] + '.wav')
-            print("→ Extracting audio...")
-            extract_audio(video_path, audio_path)
+    try:
+        print(f"🚀 Processing: {filename}")
 
-            print("→ Transcribing...")
-            transcription = transcribe_audio(audio_path)
-            transcript = transcription["text"]
+        # 🎥 STEP 1: Extract audio
+        audio_path = os.path.join(
+            UPLOAD_FOLDER,
+            filename.rsplit('.', 1)[0] + '.wav'
+        )
 
-            print("→ Generating summary...")
-            summary = generate_summary(transcript)
+        extract_audio(video_path, audio_path)
 
-            print("→ Evaluating...")
-            scores = evaluate_candidate(transcript, transcription.get("segments"))
+        # 🗣 STEP 2: Transcribe
+        transcription = transcribe_audio(audio_path)
+        transcript = transcription["text"]
 
-            # Cleanup
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
+        # 📝 STEP 3: Summary
+        summary = generate_summary(transcript)
 
-            print("✅ Processing completed successfully!")
-            return render_template('result.html',
-                                   filename=filename,
-                                   transcript=transcript,
-                                   summary=summary,
-                                   scores=scores,
-                                   final_score=scores['final_score'])
+        # 🧠 STEP 4: Evaluate (AI)
+        scores = evaluate_candidate(
+            transcript=transcript,
+            audio_path=audio_path,
+            video_path=video_path
+        )
 
-        except Exception as e:
-            print("❌ ERROR:")
-            print(traceback.format_exc())
-            flash(f'Processing failed: {str(e)}')
-            if os.path.exists(video_path):
-                os.remove(video_path)
-            return redirect(url_for('index'))
+        # 🧹 Cleanup audio
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
 
-    flash('Invalid file format')
-    return redirect(url_for('index'))
+        return render_template(
+            'result.html',
+            filename=filename,
+            transcript=transcript,
+            summary=summary,
+            scores=scores,
+            final_score=scores['final_score'],
+            decision=scores['decision'],
+            ai_feedback=scores['ai_feedback']
+        )
+
+    except Exception as e:
+        print(traceback.format_exc())
+
+        flash(f"Processing failed: {str(e)}")
+
+        if os.path.exists(video_path):
+            os.remove(video_path)
+
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
-    print("🚀 Lightweight Interview Evaluator Started!")
-    print("Access: http://localhost:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("🚀 Recruiter AI Running on http://localhost:5000")
+    app.run(debug=True)

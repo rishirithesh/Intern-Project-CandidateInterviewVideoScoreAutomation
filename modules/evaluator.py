@@ -1,128 +1,207 @@
 import nltk
-import language_tool_python
-from collections import Counter
-
-nltk.download('punkt', quiet=True)
-nltk.download('stopwords', quiet=True)
-
-tool = language_tool_python.LanguageTool('en-US')
+import re
+import requests
+from modules.audio_analyzer import analyze_audio
+from modules.video_analyzer import analyze_video
 
 
-# ====================== ROLE-BASED CONFIGURATION ======================
-# Easy to extend when new roles or criteria are needed
-ROLE_CONFIG = {
-    "general": {
-        "weights": {
-            "vocabulary": 0.25,
-            "complexity": 0.20,
-            "grammar": 0.20,
-            "filler": 0.15,
-            "speed": 0.20
-        },
-        "criteria_names": {
-            "vocabulary": "Vocabulary Richness",
-            "complexity": "Sentence Complexity",
-            "grammar": "Grammar Accuracy",
-            "filler": "Filler Word Control",
-            "speed": "Speaking Speed"
-        }
-    },
-    # Add new roles easily here in future
-    "sales": {
-        "weights": {
-            "vocabulary": 0.20,
-            "complexity": 0.15,
-            "grammar": 0.15,
-            "filler": 0.15,
-            "speed": 0.15,
-            "persuasion": 0.20   # Example new criteria
-        },
-        "criteria_names": {
-            "vocabulary": "Vocabulary Richness",
-            "complexity": "Sentence Complexity",
-            "grammar": "Grammar Accuracy",
-            "filler": "Filler Word Control",
-            "speed": "Speaking Speed",
-            "persuasion": "Persuasion Skills"
-        }
-    }
-    # You can add "technical", "leadership", "hr", etc.
-}
+def llm_evaluate(transcript):
 
+    prompt = f"""
+You are a strict hiring manager.
 
-def evaluate_candidate(transcript: str, segments: list = None, role: str = "general") -> dict:
-    """
-    Evaluate candidate based on transcript.
-    Supports different roles in future.
-    """
-    if not transcript or not transcript.strip():
+Evaluate the candidate interview response.
+
+Transcript:
+{transcript[:700]}
+
+Return JSON ONLY:
+{{
+  "communication": score (1-10),
+  "confidence": score (1-10),
+  "content": score (1-10),
+  "structure": score (1-10),
+  "reason": "short explanation"
+}}
+"""
+
+    try:
+        res = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "phi3",
+                "prompt": prompt,
+                "stream": False,
+                "format": "json"
+            }
+        )
+
+        import json
+        return json.loads(res.json()["response"])
+
+    except:
         return {
-            "vocabulary": 50, "complexity": 50, "grammar": 50,
-            "filler": 50, "speed": 50, "final_score": 50
+            "communication": 5,
+            "confidence": 5,
+            "content": 5,
+            "structure": 5,
+            "reason": "LLM failure"
         }
+
+
+def evaluate_candidate(transcript, audio_path, video_path):
 
     words = nltk.word_tokenize(transcript.lower())
     sentences = nltk.sent_tokenize(transcript)
-    total_words = len(words)
 
-    scores = {}
+    audio = analyze_audio(audio_path)
+    video = analyze_video(video_path)
+    llm = llm_evaluate(transcript)
 
-    # 1. Vocabulary Richness
-    unique_words = len(set(words))
-    scores["vocabulary"] = min(100, (unique_words / max(total_words, 1)) * 180)
+    filler_words = {'um', 'uh', 'like', 'you know'}
+    filler_count = sum(1 for w in words if w in filler_words)
 
-    # 2. Sentence Complexity
-    if sentences:
-        avg_words = total_words / len(sentences)
-        scores["complexity"] = min(100, avg_words * 7)
+    repeated = len(re.findall(r'(\b\w+\b).*\1.*\1', transcript.lower()))
+
+    energy = audio["energy"]
+    duration = audio["duration"]
+    speech_rate = audio["speech_rate"]
+
+    face_presence = video["face_presence"]
+    movement = video["movement"]
+
+    kpi_reasons = {}
+
+    # ================= KPI FIXED =================
+
+    # Communication
+    if filler_count > 8:
+        comm_signal, reason = 4, ["Frequent hesitation and fillers"]
+    elif filler_count > 4:
+        comm_signal, reason = 6, ["Moderate filler usage"]
     else:
-        scores["complexity"] = 50
+        comm_signal, reason = 8.5, ["Clear and fluent speech"]
 
-    # 3. Grammar Accuracy
-    matches = tool.check(transcript)
-    scores["grammar"] = max(30, 100 - len(matches) * 2.5)
+    communication = 0.7 * llm["communication"] + 0.3 * comm_signal
+    kpi_reasons["Communication Quality"] = reason
 
-    # 4. Filler Words
-    fillers = {'um', 'uh', 'like', 'you know', 'so', 'actually', 'basically', 'right', 'well'}
-    filler_count = sum(1 for word in words if word in fillers)
-    scores["filler"] = max(20, 100 - (filler_count / max(total_words, 1)) * 900)
+    # Confidence
+    if speech_rate < 0.2:
+        conf_signal, reason = 4, ["Slow and hesitant delivery"]
+    elif speech_rate < 0.4:
+        conf_signal, reason = 6, ["Moderate speaking pace"]
+    else:
+        conf_signal, reason = 8.5, ["Confident delivery"]
 
-    # 5. Speaking Speed
-    speed_score = 70
-    if segments and segments[-1].get('end'):
-        duration_min = segments[-1]['end'] / 60.0
-        if duration_min > 0:
-            wpm = total_words / duration_min
-            speed_score = max(30, min(100, 100 - abs(wpm - 145) * 0.7))
-    scores["speed"] = speed_score
+    confidence = 0.7 * llm["confidence"] + 0.3 * conf_signal
+    kpi_reasons["Confidence"] = reason
 
-    # ====================== FUTURE EXPANSION ======================
-    # Add new criteria here based on role
-    # if role == "sales":
-    #     scores["persuasion"] = calculate_persuasion_score(transcript)
+    # Content
+    content = llm["content"]
+    if content > 8:
+        kpi_reasons["Content Quality"] = ["Strong conceptual clarity"]
+    elif content > 5:
+        kpi_reasons["Content Quality"] = ["Average depth"]
+    else:
+        kpi_reasons["Content Quality"] = ["Weak or unclear answer"]
 
-    # Calculate Final Score using role-specific weights
-    config = ROLE_CONFIG.get(role, ROLE_CONFIG["general"])
-    weights = config["weights"]
+    # Engagement (FIXED)
+    if energy < 0.15:
+        engagement, reason = 4, ["Very low vocal energy"]
+    elif energy < 0.3:
+        engagement, reason = 6, ["Moderate vocal energy"]
+    elif energy < 0.6:
+        engagement, reason = 8, ["Good engagement"]
+    else:
+        engagement, reason = 9.5, ["Strong energetic delivery"]
 
-    final_score = 0
-    for key, score in scores.items():
-        weight = weights.get(key, 0.2)
-        final_score += score * weight
+    kpi_reasons["Engagement"] = reason
+
+    # Structure
+    if len(sentences) < 3:
+        struct_signal, reason = 4, ["Poor structure"]
+    elif len(sentences) < 6:
+        struct_signal, reason = 6.5, ["Moderate structure"]
+    else:
+        struct_signal, reason = 8.5, ["Well structured answer"]
+
+    structure = 0.7 * llm["structure"] + 0.3 * struct_signal
+    kpi_reasons["Structure"] = reason
+
+    # Originality
+    if repeated > 4:
+        originality, reason = 4, ["Highly repetitive"]
+    elif repeated > 2:
+        originality, reason = 6, ["Some repetition"]
+    else:
+        originality, reason = 8.5, ["Natural expression"]
+
+    kpi_reasons["Originality"] = reason
+
+    # Visual Presence
+    if face_presence < 0.4:
+        visual, reason = 4, ["Face not visible consistently"]
+    elif face_presence < 0.7:
+        visual, reason = 6.5, ["Partial visibility"]
+    else:
+        visual, reason = 9, ["Strong presence"]
+
+    kpi_reasons["Visual Presence"] = reason
+
+    # Stability
+    if movement > 0.6:
+        stability, reason = 4, ["Excessive movement"]
+    elif movement > 0.3:
+        stability, reason = 6, ["Some movement"]
+    else:
+        stability, reason = 8.5, ["Stable posture"]
+
+    kpi_reasons["Stability"] = reason
+
+    # Time
+    if duration < 45:
+        time_score, reason = 4, ["Too short"]
+    elif duration < 60:
+        time_score, reason = 6, ["Slightly short"]
+    elif duration <= 180:
+        time_score, reason = 9, ["Well paced"]
+    else:
+        time_score, reason = 6, ["Too long"]
+
+    kpi_reasons["Time Management"] = reason
+
+    parameters = [
+        ("Communication Quality", communication, 15),
+        ("Confidence", confidence, 15),
+        ("Content Quality", content, 20),
+        ("Engagement", engagement, 10),
+        ("Structure", structure, 10),
+        ("Originality", originality, 10),
+        ("Visual Presence", visual, 5),
+        ("Stability", stability, 5),
+        ("Time Management", time_score, 10)
+    ]
+
+    total = 0
+    detailed = {}
+
+    for name, score, weight in parameters:
+        score = max(1, min(10, score))
+        weighted = (score / 10) * weight
+        total += weighted
+
+        detailed[name] = {
+            "score": round(score, 2),
+            "weight": weight
+        }
+
+    final_score = round(total / 10, 2)
+    decision = "SELECT" if final_score >= 7 else "REJECT"
 
     return {
-        "vocabulary": round(scores["vocabulary"]),
-        "complexity": round(scores["complexity"]),
-        "grammar": round(scores["grammar"]),
-        "filler": round(scores["filler"]),
-        "speed": round(scores["speed"]),
-        "final_score": round(final_score)
+        "final_score": final_score,
+        "detailed_scores": detailed,
+        "decision": decision,
+        "ai_feedback": llm["reason"],
+        "kpi_reasons": kpi_reasons
     }
-
-
-# Optional: Helper function for future criteria
-def calculate_persuasion_score(transcript: str) -> int:
-    """Example of new criteria you can add later"""
-    persuasion_words = ['guarantee', 'best', 'proven', 'increase', 'improve', 'success', 'client', 'revenue']
-    count = sum(1 for word in transcript.lower().split() if word in persuasion_words)
-    return min(100, count * 15)

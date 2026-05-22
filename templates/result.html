@@ -2,67 +2,189 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evaluation Report - {{ filename }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>AI Interview Evaluation</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .score-box {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .score {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .decision {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .select {
+            color: green;
+        }
+
+        .reject {
+            color: red;
+        }
+
+        .card {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #fafafa;
+            border: 1px solid #ddd;
+        }
+
+        .highlight {
+            background: #eef6ff;
+            border-left: 4px solid #007bff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eee;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 15px;
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+
+        .transcript-box {
+            max-height: 220px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .logic {
+            font-size: 14px;
+            color: #555;
+        }
+
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Interview Evaluation Report</h1>
-            <p>{{ filename }}</p>
-        </header>
 
-        <div class="result-header">
-            <a href="/" class="back-btn">← Upload Another Video</a>
+<div class="container">
 
-            <!-- Final Score -->
-            <div class="final-score">
-                <h2>Final Score</h2>
-                <div class="score-circle">{{ final_score }}/100</div>
-            </div>
-        </div>
+    <a href="/" class="back-btn">← Upload Another Video</a>
 
-        <div class="main-content">
-            <!-- Summary -->
-            <div class="card">
-                <h2>📝 Interview Summary</h2>
-                <p>{{ summary }}</p>
-            </div>
+    <h1>🎯 AI Interview Evaluation</h1>
 
-            <!-- Transcript -->
-            <div class="card">
-                <h2>📜 Full Transcript</h2>
-                <div class="transcript">{{ transcript }}</div>
-            </div>
+    <!-- Final Score -->
+    <div class="score-box">
+        <div class="score">{{ final_score }}/10</div>
+    </div>
 
-            <!-- Detailed Scores -->
-            <div class="card">
-                <h2>📊 Detailed Evaluation Metrics</h2>
-                <ul class="score-list">
-                    <li>
-                        <span><strong>Vocabulary Richness</strong></span>
-                        <span class="score">{{ scores.vocabulary }}/100</span>
-                    </li>
-                    <li>
-                        <span><strong>Sentence Complexity</strong></span>
-                        <span class="score">{{ scores.complexity }}/100</span>
-                    </li>
-                    <li>
-                        <span><strong>Grammar Accuracy</strong></span>
-                        <span class="score">{{ scores.grammar }}/100</span>
-                    </li>
-                    <li>
-                        <span><strong>Filler Word Control</strong></span>
-                        <span class="score">{{ scores.filler }}/100</span>
-                    </li>
-                    <li>
-                        <span><strong>Speaking Speed</strong></span>
-                        <span class="score">{{ scores.speed }}/100</span>
-                    </li>
-                </ul>
-            </div>
+    <!-- Decision -->
+    <div class="decision">
+        Decision:
+        <span class="{% if decision == 'SELECT' %}select{% else %}reject{% endif %}">
+            {{ decision }}
+        </span>
+    </div>
+
+    <!-- Decision Logic -->
+    <div class="card logic">
+        <strong>Decision Logic:</strong><br>
+        Final Score ≥ <strong>7.0 → SELECT</strong><br>
+        Final Score &lt; <strong>7.0 → REJECT</strong>
+    </div>
+
+    <!-- AI Feedback -->
+    <div class="card highlight">
+        <h3>🧠 AI Feedback</h3>
+        <p>{{ ai_feedback }}</p>
+    </div>
+
+    <!-- KPI Scores -->
+    <table>
+    <tr>
+        <th>KPI</th>
+        <th>Score (/10)</th>
+        <th>Weight (%)</th>
+    </tr>
+
+    {% for name, data in scores.detailed_scores.items() %}
+    <tr>
+        <td>
+            <strong>{{ name }}</strong>
+
+            {% if scores.kpi_reasons[name] %}
+            <ul style="margin:5px 0; padding-left:15px;">
+                {% for reason in scores.kpi_reasons[name] %}
+                <li style="font-size:13px; color:#555;">
+                    {{ reason }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </td>
+
+        <td>{{ data.score }}</td>
+        <td>{{ data.weight }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+
+    <!-- Summary -->
+    <div class="card">
+        <h3>📝 Summary</h3>
+        <p>{{ summary }}</p>
+    </div>
+
+    <!-- Transcript -->
+    <div class="card">
+        <h3>📜 Transcript</h3>
+        <div class="transcript-box">
+            {{ transcript }}
         </div>
     </div>
+
+</div>
+
 </body>
 </html>

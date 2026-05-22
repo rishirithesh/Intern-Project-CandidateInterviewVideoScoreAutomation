@@ -7,3 +7,6 @@ language-tool-python==2.8.0
 pillow==10.4.0
 werkzeug==3.0.3
 setuptools==81.0.0
+librosa
+opencv-python
+numpy
