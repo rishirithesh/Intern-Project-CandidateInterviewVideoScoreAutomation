@@ -2,26 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Interview Evaluation</title>
-
     <style>
         body {
             font-family: Arial, sans-serif;
             background: #f4f6f8;
+            color: #1f2937;
             margin: 0;
             padding: 20px;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1040px;
             margin: auto;
             background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: 600;
         }
 
         h1 {
+            margin: 4px 0 18px;
             text-align: center;
         }
 
@@ -32,23 +42,23 @@
 
         .score {
             font-size: 48px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .decision {
             font-size: 24px;
-            font-weight: bold;
+            font-weight: 700;
             text-align: center;
             margin: 10px 0;
         }
 
-        .select { color: green; }
-        .reject { color: red; }
-        .borderline { color: orange; }
+        .hire { color: #15803d; }
+        .reject { color: #b91c1c; }
+        .borderline { color: #b45309; }
 
         .card {
             margin-top: 20px;
-            padding: 15px;
+            padding: 16px;
             border-radius: 8px;
             background: #fafafa;
             border: 1px solid #ddd;
@@ -56,170 +66,185 @@
 
         .highlight {
             background: #eef6ff;
-            border-left: 4px solid #007bff;
+            border-left: 4px solid #2563eb;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .kpi {
+            border-top: 1px solid #ddd;
+            padding: 16px 0;
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+        .kpi:first-child {
+            border-top: 0;
+            padding-top: 0;
         }
 
-        th {
-            background-color: #eee;
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: baseline;
         }
 
-        .back-btn {
-            display: inline-block;
-            margin-bottom: 15px;
-            text-decoration: none;
-            color: #007bff;
+        .kpi-score {
+            font-weight: 700;
+            white-space: nowrap;
         }
 
-        .transcript-box {
-            max-height: 220px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-
-        .logic {
+        .muted {
+            color: #6b7280;
             font-size: 14px;
-            color: #555;
         }
 
-        .borderline-note {
-            color: orange;
-            font-weight: bold;
+        .columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
             margin-top: 10px;
         }
 
+        ul {
+            margin: 8px 0 0;
+            padding-left: 18px;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        .transcript-box {
+            max-height: 260px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.55;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow: auto;
+        }
     </style>
 </head>
 <body>
-
 <div class="container">
+    <a href="/" class="back-btn">Back to upload</a>
+    <h1>AI Interview Evaluation</h1>
 
-    <a href="/" class="back-btn">← Upload Another Video</a>
-
-    <h1>🎯 AI Interview Evaluation</h1>
-
-    <!-- Final Score -->
     <div class="score-box">
         <div class="score">{{ final_score }}/10</div>
+        <div class="muted">Evidence-weighted final score</div>
     </div>
 
-    <!-- Decision -->
     <div class="decision">
         Decision:
         <span class="
-            {% if decision == 'SELECT' %}select
+            {% if decision == 'HIRE' %}hire
             {% elif decision == 'REJECT' %}reject
             {% else %}borderline
             {% endif %}
-        ">
-            {{ decision }}
-        </span>
+        ">{{ decision }}</span>
     </div>
 
     {% if decision == "BORDERLINE" %}
-    <div class="borderline-note">
-        ⚠️ This candidate falls in the borderline range. Manual review recommended.
+    <div class="card">
+        This candidate falls in the borderline range. Manual recruiter review is recommended.
     </div>
     {% endif %}
 
-    <!-- Decision Logic -->
-    <div class="card logic">
-        <strong>Decision Logic:</strong><br>
-        Final Score ≥ <strong>7.5 → SELECT</strong><br>
-        Final Score ≤ <strong>6.5 → REJECT</strong><br>
-        Otherwise → <strong>BORDERLINE</strong>
+    <div class="card">
+        <strong>Decision thresholds:</strong>
+        6.0+ HIRE, 5.0-5.9 BORDERLINE, below 5.0 REJECT.
+        Professional presence is excluded from the final score when reliable video evidence is unavailable.
     </div>
 
-    <!-- AI Feedback -->
     <div class="card highlight">
-        <h3>🧠 AI Feedback</h3>
+        <h3>Recruiter Summary</h3>
         <p>{{ ai_feedback }}</p>
+        <p class="muted">Evaluation confidence: {{ scores.confidence }}%</p>
     </div>
 
-    <!-- Raw LLM response (debug) -->
     <div class="card">
-        <h3>🐞 Raw LLM Response (debug)</h3>
-        <details>
-            <summary>Show raw model output</summary>
-            <pre style="white-space: pre-wrap; max-height: 300px; overflow:auto;">{{ raw_llm_response }}</pre>
-        </details>
-    </div>
+        <h3>Evaluation Breakdown</h3>
+        {% for name, data in scores.detailed_scores.items() %}
+        <div class="kpi">
+            <div class="kpi-header">
+                <h4>{{ name }}</h4>
+                <div class="kpi-score">
+                    {% if data.available and data.score is not none %}
+                        {{ data.score }}/10
+                    {% else %}
+                        Not evaluated
+                    {% endif %}
+                </div>
+            </div>
+            <div class="muted">Weight: {{ data.weight }}%</div>
 
-    <!-- Strengths and Weaknesses -->
-    <div class="card">
-        <h3>💡 Strengths</h3>
-        <ul>
-            {% for strength in scores.strengths %}
-            <li>{{ strength }}</li>
-            {% endfor %}
-        </ul>
-
-        <h3>⚠️ Areas for Improvement</h3>
-        <ul>
-            {% for weakness in scores.weaknesses %}
-            <li>{{ weakness }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <!-- KPI Scores -->
-    <div class="card">
-        <h3>📊 Evaluation Breakdown</h3>
-
-        <table>
-            <tr>
-                <th>KPI</th>
-                <th>Score (/10)</th>
-                <th>Weight (%)</th>
-            </tr>
-
-            {% for name, data in scores.detailed_scores.items() %}
-            <tr>
-                <td>
-                    <strong>{{ name }}</strong>
-
-                    {% if scores.kpi_reasons[name] %}
-                    <ul style="margin:5px 0; padding-left:15px;">
-                        {% for reason in scores.kpi_reasons[name] %}
-                        <li style="font-size:13px; color:#555;">
-                            {{ reason }}
-                        </li>
+            <div class="columns">
+                <div>
+                    <strong>Evidence from transcript/metrics</strong>
+                    <ul>
+                        {% for item in data.evidence %}
+                        <li>{{ item }}</li>
                         {% endfor %}
                     </ul>
-                    {% endif %}
-                </td>
+                </div>
+                <div>
+                    <strong>Strengths</strong>
+                    <ul>
+                        {% for item in data.strengths %}
+                        <li>{{ item }}</li>
+                        {% else %}
+                        <li class="muted">No strong evidence identified.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <strong>Weaknesses</strong>
+                    <ul>
+                        {% for item in data.weaknesses %}
+                        <li>{{ item }}</li>
+                        {% else %}
+                        <li class="muted">No major weakness identified.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
 
-                <td>{{ data.score }}</td>
-                <td>{{ data.weight }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+            <p><strong>Detailed recruiter reasoning:</strong> {{ data.reasoning }}</p>
+        </div>
+        {% endfor %}
     </div>
 
-    <!-- Summary -->
     <div class="card">
-        <h3>📝 Summary</h3>
-        <p>{{ summary }}</p>
-    </div>
-
-    <!-- Transcript -->
-    <div class="card">
-        <h3>📜 Transcript</h3>
-        <div class="transcript-box">
-            {{ transcript }}
+        <h3>Transcript Metrics</h3>
+        <div class="columns">
+            <div>Words: {{ scores.transcript_metrics.word_count }}</div>
+            <div>Filler rate: {{ scores.transcript_metrics.filler_rate }}</div>
+            <div>Words/minute: {{ scores.transcript_metrics.words_per_minute }}</div>
+            <div>Implementation signals: {{ scores.transcript_metrics.implementation_signal_count }}</div>
+            <div>Ownership signals: {{ scores.transcript_metrics.ownership_signal_count }}</div>
+            <div>Production signals: {{ scores.transcript_metrics.production_signal_count }}</div>
         </div>
     </div>
 
-</div>
+    <div class="card">
+        <h3>Summary</h3>
+        <p>{{ summary }}</p>
+    </div>
 
+    <div class="card">
+        <h3>Transcript</h3>
+        <div class="transcript-box">{{ transcript }}</div>
+    </div>
+
+    <div class="card">
+        <h3>Raw LLM Response</h3>
+        <details>
+            <summary>Show raw model output</summary>
+            <pre>{{ raw_llm_response }}</pre>
+        </details>
+    </div>
+</div>
 </body>
 </html>

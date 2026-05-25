@@ -5,13 +5,17 @@ from typing import Any, Dict, List
 from urllib.parse import urljoin
 
 import requests
-from requests.exceptions import RequestException
+from requests.exceptions import HTTPError, RequestException, Timeout
 
 from config import Config
 
 logger = logging.getLogger(__name__)
 
 class ModelUnavailableError(Exception):
+    pass
+
+
+class ModelMemoryError(ModelUnavailableError):
     pass
 
 
@@ -38,9 +42,25 @@ def _post_json(path: str, payload: dict, timeout: int = None) -> Dict[str, Any]:
         response = requests.post(url, json=payload, timeout=timeout or Config.LLM_TIMEOUT)
         response.raise_for_status()
         return response.json()
+    except Timeout as exc:
+        logger.error("LLM request timed out after %s seconds: %s", timeout or Config.LLM_TIMEOUT, url)
+        raise ModelUnavailableError(
+            "LLM inference timed out after %s seconds. Increase LLM_GENERATION_TIMEOUT or use a faster model."
+            % (timeout or Config.LLM_TIMEOUT)
+        ) from exc
+    except HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else "unknown"
+        body = exc.response.text[:500] if exc.response is not None else ""
+        logger.error("LLM request returned HTTP %s: %s", status, body)
+        if "requires more system memory" in body.lower():
+            raise ModelMemoryError(
+                "Selected LLM cannot fit in available memory. Ollama response: %s"
+                % body
+            ) from exc
+        raise ModelUnavailableError("LLM inference failed with HTTP %s: %s" % (status, body)) from exc
     except RequestException as exc:
         logger.error("LLM request failed: %s", exc)
-        raise ModelUnavailableError("LLM inference failed") from exc
+        raise ModelUnavailableError("LLM inference failed: %s" % str(exc)) from exc
 
 
 def _extract_model_list(data: Any) -> List[Any]:
@@ -270,15 +290,15 @@ def generate_evaluation(prompt: str) -> Dict[str, Any]:
     payload = {
         'model': model_id,
         'messages': [
-            {'role': 'system', 'content': 'You are a professional hiring evaluator. Respond with valid JSON only.'},
+            {'role': 'system', 'content': 'You are a strict technical interviewer. Use only provided evidence and respond with valid JSON only.'},
             {'role': 'user', 'content': prompt},
         ],
         'temperature': 0.0,
-        'max_tokens': 600,
+        'max_tokens': 1000,
         'top_p': 1.0,
     }
 
-    result = _post_json('/v1/chat/completions', payload)
+    result = _post_json('/v1/chat/completions', payload, timeout=Config.LLM_GENERATION_TIMEOUT)
     response_text = _extract_response_text(result)
     try:
         parsed = _parse_json_text(response_text)
@@ -288,5 +308,7 @@ def generate_evaluation(prompt: str) -> Dict[str, Any]:
     if isinstance(parsed, dict):
         parsed['raw_llm_response'] = response_text
         if 'reason' not in parsed:
-            parsed['reason'] = _extract_reason_text(response_text) or 'LLM response returned without a reason field.'
+            extracted_reason = _extract_reason_text(response_text)
+            if extracted_reason:
+                parsed['reason'] = extracted_reason
     return parsed

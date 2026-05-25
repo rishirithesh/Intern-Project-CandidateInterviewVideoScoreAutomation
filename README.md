@@ -1,78 +1,89 @@
-# Candidate Video Evaluator 
+# Candidate Video Evaluator
 
-**An AI-Powered Offline Interview Analysis Tool**
+An offline AI-assisted interview evaluation tool for recruiter screening.
 
-Built as an **Internship Project** at **Agilisium Consulting** to help automate and improve the hiring process.
+The system extracts audio from an uploaded interview video, transcribes the answer, asks a local LLM for transcript-grounded recruiter analysis, and computes calibrated evidence-driven KPI scores out of 10.
 
----
+## Evaluation Model
 
-## Project Information
+The current scoring model is intentionally conservative:
 
-- **Intern**: Rishi Rithesh
-- **Company**: Agilisium Consulting
-- **Duration**: May 2026 – July 2026
-- **Mentor**: Gaurav Yadav Sir & Srivatsan Sridharan Sir
-- **Objective**: To build intelligent tech agents and innovative solutions that ease and automate the hiring/recruitment process.
+- Scores are out of 10.
+- Final score is a weighted average of available KPIs.
+- 6.0+ = HIRE.
+- 5.0 to 5.9 = BORDERLINE.
+- Below 5.0 = REJECT.
+- Professional presence is evaluated only when video face evidence is reliable.
+- Missing LLM KPI evidence fails the evaluation instead of falling back to default scores.
 
----
+## KPIs
 
-## Features
+- Communication Skills: clarity, fluency, filler usage, sentence structure, concise speaking, professionalism, and technical articulation.
+- Technical Skills: implementation depth, APIs/databases, debugging, architecture, deployment/devops, scalability, framework knowledge, and practical problem solving.
+- Project Understanding: ownership depth, production awareness, constraints, tradeoffs, feature reasoning, and business/practical understanding.
+- Professional Presence: camera/face evidence, eye contact, lighting, background, stability, and visible presentation quality when available.
+- Interview Readiness: derived from the core evidence rather than assigned as a static score.
 
-- Upload candidate interview videos (MP4, MOV, AVI)
-- Automatic audio extraction
-- Accurate speech-to-text transcription (Faster-Whisper)
-- AI-generated summary of responses
-- Comprehensive candidate evaluation with 5 key metrics
-- Final weighted score (0–100)
-- Fully offline & local processing
-- Clean, modern web interface
+## Anti-Inflation Rules
 
----
-
-## Use Cases
-
-- Initial screening of candidates
-- Communication & soft skills assessment
-- Campus hiring & bulk recruitment
-- Sales, Customer Success, Support, and Teaching roles
-- Mock interview feedback system
-
----
+- No midpoint fallback scores are used for missing model output.
+- Technical scores are penalized when answers contain buzzwords without implementation detail.
+- Project scores are penalized when ownership, production, or tradeoff evidence is weak.
+- Communication scores are penalized for excessive fillers, rambling, poor pace, short transcripts, and weak audio clarity.
+- Video/grooming metrics do not affect technical or project scores.
 
 ## Tech Stack
 
-- **Backend**: Python, Flask
-- **Speech-to-Text**: Faster-Whisper (optimized)
-- **Summarization**: DistilBART (lightweight)
-- **Video Processing**: MoviePy
-- **NLP & Evaluation**: NLTK, language-tool-python
-- **Frontend**: HTML, CSS, Vanilla JavaScript
+- Backend: Python, Flask
+- Speech-to-text: Faster-Whisper
+- Summarization: DistilBART
+- Video analysis: OpenCV, MediaPipe
+- Audio/video processing: MoviePy, NumPy
+- LLM: local OpenAI-compatible/Ollama server
 
----
+## Setup
 
-## Setup Notes
+Install dependencies:
 
-- Install dependencies from `requirements.txt`.
-- `moviepy` requires an `ffmpeg` installation on the host machine.
-- The app uses a local Ollama server for LLM evaluation; start it with `ollama serve` and ensure `LLM_SERVER_URL` points to the running port.
+```bash
+pip install -r requirements.txt
+```
 
----
+Start your local LLM server and configure:
 
-##  Project Structure
+```bash
+set LLM_SERVER_URL=http://localhost:11434
+set LLM_MODEL_NAME=phi3:latest
+set LLM_GENERATION_TIMEOUT=180
+```
+
+Run the app:
+
+```bash
+python app.py
+```
+
+Open `http://localhost:5000`.
+
+## Project Structure
 
 ```plaintext
 interview-evaluator/
-├── app.py
-├── config.py
-├── requirements.txt
-├── modules/
-│   ├── audio_extractor.py
-│   ├── transcriber.py
-│   ├── summarizer.py
-│   └── evaluator.py          # Core scoring logic
-├── templates/
-│   ├── index.html
-│   └── result.html
-├── static/
-│   └── style.css
-└── uploads/
+  app.py
+  config.py
+  requirements.txt
+  modules/
+    audio_analyzer.py
+    audio_extractor.py
+    evaluator.py
+    evaluation_engine.py
+    llm_client.py
+    summarizer.py
+    transcriber.py
+    video_analyzer.py
+  templates/
+    index.html
+    result.html
+  static/
+    style.css
+```

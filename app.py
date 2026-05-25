@@ -1,13 +1,14 @@
 import logging
 import os
 import traceback
-from flask import Flask, render_template, request, redirect, url_for, flash
+
+from flask import Flask, flash, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
 from config import Config
 from modules.audio_extractor import extract_audio
 from modules.evaluator import evaluate_candidate
-from modules.llm_client import check_model_available, ModelUnavailableError
+from modules.llm_client import ModelUnavailableError, check_model_available
 from modules.summarizer import generate_summary
 from modules.transcriber import transcribe_audio
 
@@ -52,7 +53,6 @@ def health_check():
 
 @app.route('/upload', methods=['POST'])
 def upload_video():
-
     if 'video' not in request.files:
         flash('No file uploaded')
         return redirect(url_for('index'))
@@ -73,25 +73,22 @@ def upload_video():
     file.save(video_path)
 
     try:
-        app.logger.info('Processing: %s', filename)
+        app.logger.info('Checking LLM availability before processing')
+        check_model_available()
 
+        app.logger.info('Processing: %s', filename)
         extract_audio(video_path, audio_path)
 
-        # 🗣 STEP 2: Transcribe
         transcription = transcribe_audio(audio_path)
         transcript = transcription["text"]
-
-        # 📝 STEP 3: Summary
         summary = generate_summary(transcript)
 
-        # 🧠 STEP 4: Evaluate (AI)
         scores = evaluate_candidate(
             transcript=transcript,
             audio_path=audio_path,
-            video_path=video_path
+            video_path=video_path,
         )
 
-        # 🧹 Cleanup audio
         if os.path.exists(audio_path):
             os.remove(audio_path)
 
@@ -104,21 +101,23 @@ def upload_video():
             final_score=scores['final_score'],
             decision=scores['decision'],
             ai_feedback=scores['ai_feedback'],
-            raw_llm_response=scores.get('raw_llm_response', '')
+            raw_llm_response=scores.get('raw_llm_response', ''),
         )
 
-    except Exception as e:
+    except Exception as exc:
         print(traceback.format_exc())
-        error_message = str(e)
+        error_message = str(exc)
         raw_response = None
-        if hasattr(e, 'raw_text'):
-            raw_response = getattr(e, 'raw_text')
+        if hasattr(exc, 'raw_text'):
+            raw_response = getattr(exc, 'raw_text')
             preview = raw_response[:300].replace('\n', ' ').replace('"', '\\"')
             error_message = f"LLM returned invalid JSON output. Preview: {preview}"
         flash(f"Processing failed: {error_message}")
         if raw_response:
             app.logger.error('Raw LLM response on failure: %s', raw_response)
 
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
         if os.path.exists(video_path):
             os.remove(video_path)
 
@@ -126,5 +125,5 @@ def upload_video():
 
 
 if __name__ == '__main__':
-    print("🚀 Recruiter AI Running on http://localhost:5000")
+    print("Recruiter AI running on http://localhost:5000")
     app.run(debug=True)

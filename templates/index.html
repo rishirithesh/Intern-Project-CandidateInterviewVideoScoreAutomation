@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>Interview Evaluation</h1>
-            <p>Dynamic Candidate Video Analysis</p>
+            <p>Candidate video analysis</p>
         </header>
 
         {% with messages = get_flashed_messages() %}
@@ -25,10 +25,10 @@
 
         <div class="upload-section">
             <div class="upload-card">
-                <div class="upload-icon">↗️</div>
+                <div class="upload-icon">Upload</div>
                 <h2>Upload Candidate Video</h2>
-                <p>Supports MP4 • Max 10 minutes recommended</p>
-                
+                <p>Supports MP4, MOV, AVI, MKV, and WEBM. Keep interviews under 10 minutes for best turnaround.</p>
+
                 <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
                     <input type="file" name="video" accept="video/*" required>
                     <button type="submit" id="submitBtn">Evaluate</button>
@@ -37,9 +37,9 @@
 
             <div id="loading" class="loading">
                 <div class="spinner"></div>
-                <h3>Analyzing Video...</h3>
-                <p>Please wait while we transcribe and evaluate the interview.</p>
-                <small>First time may take longer.</small>
+                <h3>Analyzing video</h3>
+                <p>Please wait while the app extracts audio, transcribes, and evaluates the interview.</p>
+                <small>First run may take longer while local models load.</small>
             </div>
         </div>
     </div>

@@ -9,7 +9,8 @@ class Config:
 
     LLM_SERVER_URL = os.environ.get('LLM_SERVER_URL', 'http://localhost:11434')
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'phi3:latest')
-    LLM_TIMEOUT = int(os.environ.get('LLM_TIMEOUT', '20'))
+    LLM_TIMEOUT = int(os.environ.get('LLM_TIMEOUT', '180'))
+    LLM_GENERATION_TIMEOUT = int(os.environ.get('LLM_GENERATION_TIMEOUT', '180'))
 
     VIDEO_SAMPLE_COUNT = int(os.environ.get('VIDEO_SAMPLE_COUNT', '15'))
     VIDEO_MIN_SAMPLE_SECONDS = float(os.environ.get('VIDEO_MIN_SAMPLE_SECONDS', '0.5'))
