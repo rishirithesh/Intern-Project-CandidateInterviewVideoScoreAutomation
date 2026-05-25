@@ -33,7 +33,6 @@
         .score {
             font-size: 48px;
             font-weight: bold;
-            color: #333;
         }
 
         .decision {
@@ -43,13 +42,9 @@
             margin: 10px 0;
         }
 
-        .select {
-            color: green;
-        }
-
-        .reject {
-            color: red;
-        }
+        .select { color: green; }
+        .reject { color: red; }
+        .borderline { color: orange; }
 
         .card {
             margin-top: 20px;
@@ -69,13 +64,9 @@
             border-collapse: collapse;
         }
 
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-
         th, td {
+            border: 1px solid #ddd;
             padding: 10px;
-            text-align: left;
         }
 
         th {
@@ -89,10 +80,6 @@
             color: #007bff;
         }
 
-        .back-btn:hover {
-            text-decoration: underline;
-        }
-
         .transcript-box {
             max-height: 220px;
             overflow-y: auto;
@@ -102,6 +89,12 @@
         .logic {
             font-size: 14px;
             color: #555;
+        }
+
+        .borderline-note {
+            color: orange;
+            font-weight: bold;
+            margin-top: 10px;
         }
 
     </style>
@@ -122,16 +115,28 @@
     <!-- Decision -->
     <div class="decision">
         Decision:
-        <span class="{% if decision == 'SELECT' %}select{% else %}reject{% endif %}">
+        <span class="
+            {% if decision == 'SELECT' %}select
+            {% elif decision == 'REJECT' %}reject
+            {% else %}borderline
+            {% endif %}
+        ">
             {{ decision }}
         </span>
     </div>
 
+    {% if decision == "BORDERLINE" %}
+    <div class="borderline-note">
+        ⚠️ This candidate falls in the borderline range. Manual review recommended.
+    </div>
+    {% endif %}
+
     <!-- Decision Logic -->
     <div class="card logic">
         <strong>Decision Logic:</strong><br>
-        Final Score ≥ <strong>7.0 → SELECT</strong><br>
-        Final Score &lt; <strong>7.0 → REJECT</strong>
+        Final Score ≥ <strong>7.5 → SELECT</strong><br>
+        Final Score ≤ <strong>6.5 → REJECT</strong><br>
+        Otherwise → <strong>BORDERLINE</strong>
     </div>
 
     <!-- AI Feedback -->
@@ -140,35 +145,65 @@
         <p>{{ ai_feedback }}</p>
     </div>
 
+    <!-- Raw LLM response (debug) -->
+    <div class="card">
+        <h3>🐞 Raw LLM Response (debug)</h3>
+        <details>
+            <summary>Show raw model output</summary>
+            <pre style="white-space: pre-wrap; max-height: 300px; overflow:auto;">{{ raw_llm_response }}</pre>
+        </details>
+    </div>
+
+    <!-- Strengths and Weaknesses -->
+    <div class="card">
+        <h3>💡 Strengths</h3>
+        <ul>
+            {% for strength in scores.strengths %}
+            <li>{{ strength }}</li>
+            {% endfor %}
+        </ul>
+
+        <h3>⚠️ Areas for Improvement</h3>
+        <ul>
+            {% for weakness in scores.weaknesses %}
+            <li>{{ weakness }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
     <!-- KPI Scores -->
-    <table>
-    <tr>
-        <th>KPI</th>
-        <th>Score (/10)</th>
-        <th>Weight (%)</th>
-    </tr>
+    <div class="card">
+        <h3>📊 Evaluation Breakdown</h3>
 
-    {% for name, data in scores.detailed_scores.items() %}
-    <tr>
-        <td>
-            <strong>{{ name }}</strong>
+        <table>
+            <tr>
+                <th>KPI</th>
+                <th>Score (/10)</th>
+                <th>Weight (%)</th>
+            </tr>
 
-            {% if scores.kpi_reasons[name] %}
-            <ul style="margin:5px 0; padding-left:15px;">
-                {% for reason in scores.kpi_reasons[name] %}
-                <li style="font-size:13px; color:#555;">
-                    {{ reason }}
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-        </td>
+            {% for name, data in scores.detailed_scores.items() %}
+            <tr>
+                <td>
+                    <strong>{{ name }}</strong>
 
-        <td>{{ data.score }}</td>
-        <td>{{ data.weight }}</td>
-    </tr>
-    {% endfor %}
-    </table>
+                    {% if scores.kpi_reasons[name] %}
+                    <ul style="margin:5px 0; padding-left:15px;">
+                        {% for reason in scores.kpi_reasons[name] %}
+                        <li style="font-size:13px; color:#555;">
+                            {{ reason }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </td>
+
+                <td>{{ data.score }}</td>
+                <td>{{ data.weight }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 
     <!-- Summary -->
     <div class="card">

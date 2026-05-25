@@ -79,6 +79,22 @@ button:hover {
     transform: translateY(-3px);
 }
 
+.flash-messages {
+    margin: 20px auto;
+    max-width: 760px;
+    text-align: left;
+}
+
+.flash-message {
+    background: #fde68a;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
 /* Loading */
 .loading {
     display: none;

@@ -1,35 +1,34 @@
-from transformers import pipeline
+﻿from transformers import pipeline
 
-summarizer = None
+_summarizer = None
+
 
 def get_summarizer():
-    global summarizer
-    if summarizer is None:
-        print("🔄 Loading lightweight summarization model...")
-        summarizer = pipeline(
-            "summarization",
-            model="sshleifer/distilbart-cnn-12-6",   # ~300MB instead of 1.6GB
-            device=-1
+    global _summarizer
+    if _summarizer is None:
+        print("🔄 Loading deterministic summarization model...")
+        _summarizer = pipeline(
+            'summarization',
+            model='sshleifer/distilbart-cnn-12-6',
+            device=-1,
         )
-    return summarizer
+    return _summarizer
 
 
 def generate_summary(text: str) -> str:
-    """Lightweight summary"""
-    if len(text.split()) < 50:
-        return text
-    
+    if not text or len(text.split()) < 50:
+        return text.strip()
+
     try:
         pipe = get_summarizer()
-        summary = pipe(
+        output = pipe(
             text,
             max_length=130,
             min_length=50,
-            do_sample=False
-        )[0]['summary_text']
-        return summary
-    except Exception as e:
-        print(f"Summary fallback used: {e}")
-        # Simple fallback
-        sentences = text.split('. ')
-        return '. '.join(sentences[:4]) + "..."
+            do_sample=False,
+        )
+        return output[0]['summary_text'].strip()
+    except Exception as exc:
+        print(f"Summary model fallback used: {exc}")
+        sentences = [sentence.strip() for sentence in text.replace('\n', ' ').split('.') if sentence.strip()]
+        return ('. '.join(sentences[:4]) + '...').strip()

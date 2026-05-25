@@ -50,6 +50,14 @@ Built as an **Internship Project** at **Agilisium Consulting** to help automate 
 
 ---
 
+## Setup Notes
+
+- Install dependencies from `requirements.txt`.
+- `moviepy` requires an `ffmpeg` installation on the host machine.
+- The app uses a local Ollama server for LLM evaluation; start it with `ollama serve` and ensure `LLM_SERVER_URL` points to the running port.
+
+---
+
 ##  Project Structure
 
 ```plaintext
