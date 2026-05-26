@@ -244,7 +244,7 @@ def generate_evaluation(prompt: str) -> Dict[str, Any]:
     payload = {
         'model': model_id,
         'messages': [
-            {'role': 'system', 'content': 'You are a strict technical interviewer. Use only provided evidence and respond with valid JSON only.'},
+            {'role': 'system', 'content': 'You are a strict candidate interviewer. Use only provided evidence and respond with valid JSON only.'},
             {'role': 'user', 'content': prompt},
         ],
         'temperature': 0.0,
