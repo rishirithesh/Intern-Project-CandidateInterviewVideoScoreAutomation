@@ -19,6 +19,12 @@ VALID_SAMPLE = {
         },
         "technical_skills": {
             "score": 5,
+            "subscores": {
+                "conceptual_knowledge": 5,
+                "implementation_depth": 4,
+                "tools_and_frameworks": 6,
+                "problem_solving": 5,
+            },
             "evidence": ["Mentions APIs and database but does not explain implementation details."],
             "strengths": ["Some relevant technical vocabulary."],
             "weaknesses": ["No debugging or tradeoff evidence."],
@@ -26,6 +32,12 @@ VALID_SAMPLE = {
         },
         "project_understanding": {
             "score": 4,
+            "subscores": {
+                "ownership": 4,
+                "feature_understanding": 5,
+                "architecture_or_flow": 3,
+                "practical_constraints": 3,
+            },
             "evidence": ["Project ownership is described vaguely."],
             "strengths": [],
             "weaknesses": ["Ownership and production readiness are unclear."],

@@ -1,4 +1,15 @@
-﻿import os
+import os
+
+
+DEFAULT_LLM_MODEL = 'qwen2.5:3b'
+
+
+def _llm_model_name() -> str:
+    if os.environ.get('ALLOW_LLM_MODEL_OVERRIDE', '').strip().lower() not in {'1', 'true', 'yes'}:
+        return DEFAULT_LLM_MODEL
+    configured = os.environ.get('LLM_MODEL_NAME', '').strip()
+    return configured or DEFAULT_LLM_MODEL
+
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'super-secret-key-for-development-only')
@@ -8,7 +19,7 @@ class Config:
     MAX_CONTENT_LENGTH = 200 * 1024 * 1024  # 200 MB
 
     LLM_SERVER_URL = os.environ.get('LLM_SERVER_URL', 'http://localhost:11434')
-    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'phi3:latest')
+    LLM_MODEL_NAME = _llm_model_name()
     LLM_TIMEOUT = int(os.environ.get('LLM_TIMEOUT', '180'))
     LLM_GENERATION_TIMEOUT = int(os.environ.get('LLM_GENERATION_TIMEOUT', '180'))
 

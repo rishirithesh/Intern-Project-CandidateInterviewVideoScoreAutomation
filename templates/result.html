@@ -129,11 +129,11 @@
 <body>
 <div class="container">
     <a href="/" class="back-btn">Back to upload</a>
-    <h1>AI Interview Evaluation</h1>
+    <h1>Results (Assistance, not a replacement)</h1>
 
     <div class="score-box">
         <div class="score">{{ final_score }}/10</div>
-        <div class="muted">Evidence-weighted final score</div>
+        <div class="muted">*powered by ollama qwen2.5:3b</div>
     </div>
 
     <div class="decision">
@@ -180,6 +180,14 @@
             </div>
             <div class="muted">Weight: {{ data.weight }}%</div>
 
+            {% if data.subscores %}
+            <div class="columns">
+                {% for sub_name, sub_score in data.subscores.items() %}
+                <div>{{ sub_name.replace("_", " ").title() }}: {{ "%.1f"|format(sub_score) }}/10</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="columns">
                 <div>
                     <strong>Evidence from transcript/metrics</strong>
@@ -225,6 +233,22 @@
             <div>Implementation signals: {{ scores.transcript_metrics.implementation_signal_count }}</div>
             <div>Ownership signals: {{ scores.transcript_metrics.ownership_signal_count }}</div>
             <div>Production signals: {{ scores.transcript_metrics.production_signal_count }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>OpenCV Video Metrics</h3>
+        <div class="columns">
+            <div>Frames analyzed: {{ scores.video_metrics.frames_analyzed }}</div>
+            <div>Face detections: {{ scores.video_metrics.face_detections }}</div>
+            <div>Face presence: {{ scores.video_metrics.face_presence }}</div>
+            <div>Eye contact/camera alignment: {{ scores.video_metrics.eye_contact if scores.video_metrics.eye_contact is not none else "Unavailable" }}</div>
+            <div>Lighting: {{ scores.video_metrics.lighting if scores.video_metrics.lighting is not none else "Unavailable" }}</div>
+            <div>Background cleanliness: {{ scores.video_metrics.background_cleanliness if scores.video_metrics.background_cleanliness is not none else "Unavailable" }}</div>
+            <div>Camera stability: {{ scores.video_metrics.camera_stability if scores.video_metrics.camera_stability is not none else "Unavailable" }}</div>
+            <div>Face visibility/sharpness: {{ scores.video_metrics.grooming if scores.video_metrics.grooming is not none else "Unavailable" }}</div>
+            <div>Clothing coverage: {{ scores.video_metrics.dressing if scores.video_metrics.dressing is not none else "Unavailable" }}</div>
+            <div>Dominant clothing color: {{ scores.video_metrics.dominant_clothing_color if scores.video_metrics.dominant_clothing_color else "Unavailable" }}</div>
         </div>
     </div>
 

@@ -43,7 +43,9 @@ def _score_with_penalty(base_score: float, penalty: float) -> float:
 
 def _has_video_evidence(video_metrics: VideoAnalysisResult) -> bool:
     return (
-        video_metrics.face_confidence >= 0.45
+        video_metrics.frames_analyzed > 0
+        and video_metrics.face_detections > 0
+        and video_metrics.face_confidence >= 0.45
         and video_metrics.face_presence >= 0.45
     )
 
@@ -88,20 +90,20 @@ def _technical_penalty(transcript_metrics: Dict[str, float]) -> Tuple[float, Lis
     reasons = []
     penalty = 0.0
 
-    if transcript_metrics["technical_term_count"] < 3:
-        penalty += 1.4
-        reasons.append("Transcript contains limited concrete technical vocabulary.")
-    if transcript_metrics["implementation_signal_count"] < 2:
-        penalty += 1.6
-        reasons.append("Few implementation-level details were detected.")
-    if transcript_metrics["debugging_signal_count"] == 0:
+    if transcript_metrics["technical_term_count"] == 0:
+        penalty += 1.0
+        reasons.append("Transcript contains no concrete technical vocabulary.")
+    elif transcript_metrics["technical_term_count"] < 3 and transcript_metrics["implementation_signal_count"] == 0:
         penalty += 0.6
-        reasons.append("No debugging, failure, or troubleshooting evidence was detected.")
-    if transcript_metrics["tradeoff_signal_count"] == 0:
-        penalty += 0.6
-        reasons.append("No tradeoff or architecture decision evidence was detected.")
-    if transcript_metrics["technical_term_count"] >= 4 and transcript_metrics["buzzword_ratio"] > 0.6:
-        penalty += 1.2
+        reasons.append("Transcript contains limited technical vocabulary and little implementation evidence.")
+    if transcript_metrics["implementation_signal_count"] == 0 and transcript_metrics["technical_term_count"] < 5:
+        penalty += 0.9
+        reasons.append("Implementation-level details were not clearly detected.")
+    if transcript_metrics["debugging_signal_count"] == 0 and transcript_metrics["tradeoff_signal_count"] == 0:
+        penalty += 0.4
+        reasons.append("No debugging or tradeoff evidence was detected.")
+    if transcript_metrics["technical_term_count"] >= 5 and transcript_metrics["buzzword_ratio"] > 0.7:
+        penalty += 0.8
         reasons.append("Technical language appears buzzword-heavy compared with implementation detail.")
 
     return penalty, reasons
@@ -111,17 +113,20 @@ def _project_penalty(transcript_metrics: Dict[str, float]) -> Tuple[float, List[
     reasons = []
     penalty = 0.0
 
-    if transcript_metrics["ownership_signal_count"] < 2:
-        penalty += 1.5
-        reasons.append("Ownership signals are weak or infrequent.")
-    if transcript_metrics["implementation_signal_count"] < 2:
-        penalty += 1.0
-        reasons.append("Project explanation lacks concrete implementation evidence.")
-    if transcript_metrics["production_signal_count"] == 0:
+    if transcript_metrics["ownership_signal_count"] == 0 and transcript_metrics["implementation_signal_count"] == 0:
+        penalty += 1.2
+        reasons.append("Ownership and implementation signals are both weak.")
+    elif transcript_metrics["ownership_signal_count"] == 0:
+        penalty += 0.6
+        reasons.append("Direct ownership signals are limited.")
+    if transcript_metrics["implementation_signal_count"] == 0:
         penalty += 0.7
-        reasons.append("No production, deployment, testing, or scalability evidence was detected.")
+        reasons.append("Project explanation lacks concrete implementation evidence.")
+    if transcript_metrics["production_signal_count"] == 0 and transcript_metrics["tradeoff_signal_count"] == 0:
+        penalty += 0.4
+        reasons.append("No production, deployment, scalability, or tradeoff evidence was detected.")
     if transcript_metrics["vague_term_count"] >= 8:
-        penalty += 0.8
+        penalty += 0.5
         reasons.append("Frequent vague terms reduce confidence in genuine project ownership.")
 
     return penalty, reasons
@@ -130,13 +135,20 @@ def _project_penalty(transcript_metrics: Dict[str, float]) -> Tuple[float, List[
 def _professional_presence_score(video_metrics: VideoAnalysisResult) -> Optional[float]:
     if not _has_video_evidence(video_metrics):
         return None
-    return clamp(safe_average([
-        video_metrics.eye_contact * 10,
-        video_metrics.lighting * 10,
-        video_metrics.background_cleanliness * 10,
-        video_metrics.camera_stability * 10,
-        video_metrics.dressing * 10,
-    ]))
+    components = [
+        value * 10 for value in (
+            video_metrics.eye_contact,
+            video_metrics.lighting,
+            video_metrics.background_cleanliness,
+            video_metrics.camera_stability,
+            video_metrics.grooming,
+            video_metrics.dressing,
+        )
+        if isinstance(value, (int, float))
+    ]
+    if len(components) < 3:
+        return None
+    return clamp(safe_average(components))
 
 
 def _presence_reasons(video_metrics: VideoAnalysisResult, available: bool) -> Tuple[List[str], List[str], List[str]]:
@@ -148,28 +160,43 @@ def _presence_reasons(video_metrics: VideoAnalysisResult, available: bool) -> Tu
         )
 
     evidence = [
-        "Video metrics: eye contact %.1f/10, lighting %.1f/10, background %.1f/10, camera stability %.1f/10."
-        % (
-            video_metrics.eye_contact * 10,
-            video_metrics.lighting * 10,
-            video_metrics.background_cleanliness * 10,
-            video_metrics.camera_stability * 10,
-        )
+        "OpenCV video metrics: face detected in %s/%s analyzed frames."
+        % (video_metrics.face_detections, video_metrics.frames_analyzed)
     ]
+    metric_parts = []
+    for label, value in (
+        ("eye contact/camera alignment", video_metrics.eye_contact),
+        ("lighting", video_metrics.lighting),
+        ("background cleanliness", video_metrics.background_cleanliness),
+        ("camera stability", video_metrics.camera_stability),
+        ("face visibility/sharpness", video_metrics.grooming),
+        ("clothing coverage", video_metrics.dressing),
+    ):
+        if isinstance(value, (int, float)):
+            metric_parts.append("%s %.1f/10" % (label, value * 10))
+    if metric_parts:
+        evidence.append("; ".join(metric_parts) + ".")
+    if video_metrics.dominant_clothing_color:
+        evidence.append("Dominant clothing color detected by OpenCV: %s." % video_metrics.dominant_clothing_color)
+
     strengths = []
     weaknesses = []
-    if video_metrics.eye_contact >= 0.65:
+    if isinstance(video_metrics.eye_contact, (int, float)) and video_metrics.eye_contact >= 0.65:
         strengths.append("Maintains reasonably direct camera alignment.")
-    elif video_metrics.eye_contact < 0.45:
+    elif isinstance(video_metrics.eye_contact, (int, float)) and video_metrics.eye_contact < 0.45:
         weaknesses.append("Eye contact/camera alignment appears weak.")
-    if video_metrics.lighting >= 0.65:
+    if isinstance(video_metrics.lighting, (int, float)) and video_metrics.lighting >= 0.65:
         strengths.append("Lighting supports interview visibility.")
-    elif video_metrics.lighting < 0.45:
+    elif isinstance(video_metrics.lighting, (int, float)) and video_metrics.lighting < 0.45:
         weaknesses.append("Lighting may reduce professional presentation quality.")
-    if video_metrics.background_cleanliness < 0.45:
+    if isinstance(video_metrics.background_cleanliness, (int, float)) and video_metrics.background_cleanliness < 0.45:
         weaknesses.append("Background appears visually busy.")
-    if video_metrics.camera_stability < 0.45:
+    if isinstance(video_metrics.camera_stability, (int, float)) and video_metrics.camera_stability < 0.45:
         weaknesses.append("Camera stability is weak.")
+    if isinstance(video_metrics.grooming, (int, float)) and video_metrics.grooming < 0.45:
+        weaknesses.append("Face visibility/sharpness is weak, so grooming/presentation confidence is limited.")
+    if isinstance(video_metrics.dressing, (int, float)) and video_metrics.dressing < 0.45:
+        weaknesses.append("Clothing-region analysis suggests low professional coverage confidence.")
     return evidence, strengths, weaknesses
 
 
@@ -253,7 +280,7 @@ def build_category_scores(
     ])
     readiness_penalty = 0.0
     readiness_evidence = [
-        "Readiness combines communication, technical depth, and project ownership rather than adding a separate static score."
+        "Readiness combines communication, technical depth, and project ownership instead of assigning an independent score."
     ]
     if transcript_metrics["word_count"] < 80:
         readiness_penalty += 0.8

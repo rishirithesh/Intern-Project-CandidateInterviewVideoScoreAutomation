@@ -5,14 +5,14 @@ base = 'http://localhost:11434'
 paths = [
     '/v1/completions',
     '/v1/chat/completions',
-    '/v1/completions?model=phi3:latest',
-    '/v1/chat/completions?model=phi3:latest',
+    '/v1/completions?model=qwen2.5:3b',
+    '/v1/chat/completions?model=qwen2.5:3b',
 ]
 for path in paths:
     try:
         url = urljoin(base, path)
         payload = {
-            'model': 'phi3:latest',
+            'model': 'qwen2.5:3b',
             'messages': [{'role': 'user', 'content': 'Hello'}],
             'temperature': 0.0,
             'max_tokens': 20,

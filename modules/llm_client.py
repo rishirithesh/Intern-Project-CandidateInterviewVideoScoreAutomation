@@ -143,54 +143,8 @@ def _extract_response_text(payload: dict) -> str:
 
 
 def _normalize_parsed_response(data: dict) -> dict:
-    """Normalize numeric scores and preserve comment fields from parsed JSON."""
-    result = {}
-    for key, value in data.items():
-        if key in ('communication', 'confidence', 'content', 'structure'):
-            if isinstance(value, (int, float)):
-                result[key] = max(1.0, min(10.0, value))
-            elif isinstance(value, dict):
-                for sub_value in value.values():
-                    if isinstance(sub_value, (int, float)):
-                        result[key] = max(1.0, min(10.0, sub_value))
-                        break
-            else:
-                # preserve invalid values to detect missing or malformed scores later
-                result[key] = value
-        else:
-            result[key] = value
-
-    reason = result.get('reason') if 'reason' in result else data.get('reason')
-    if isinstance(reason, str):
-        result['reason'] = reason.strip()
-    elif isinstance(reason, dict):
-        flattened = next((str(v).strip() for v in reason.values() if isinstance(v, str) and v.strip()), None)
-        if flattened:
-            result['reason'] = flattened
-    return result
-
-
-def _extract_partial_scores(text: str) -> dict:
-    """Extract numeric scores from partially truncated JSON using regex, tolerating nested structures."""
-    result = {}
-    patterns = {
-        'communication': r'"communication"\s*:\s*[^,}]*?(\d+)',
-        'confidence': r'"confidence"\s*:\s*[^,}]*?(\d+)',
-        'content': r'"content"\s*:\s*[^,}]*?(\d+)',
-        'structure': r'"structure"\s*:\s*[^,}]*?(\d+)',
-    }
-    for key, pattern in patterns.items():
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-        if match:
-            try:
-                score = int(match.group(1))
-                result[key] = max(1.0, min(10.0, float(score)))
-            except (ValueError, IndexError):
-                pass
-    if result:
-        result['reason'] = 'Extracted from model response.'
-        logger.info('Regex extraction succeeded for keys: %s', list(result.keys()))
-    return result
+    """Preserve the parsed JSON object without inventing or recovering scores."""
+    return data
 
 
 def _extract_reason_text(text: str) -> str:

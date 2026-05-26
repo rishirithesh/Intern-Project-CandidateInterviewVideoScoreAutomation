@@ -74,6 +74,7 @@ def upload_video():
 
     try:
         app.logger.info('Checking LLM availability before processing')
+        app.logger.info('Configured LLM model: %s', Config.LLM_MODEL_NAME)
         check_model_available()
 
         app.logger.info('Processing: %s', filename)

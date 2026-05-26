@@ -25,13 +25,23 @@ TECHNICAL_TERMS = {
     "docker", "kubernetes", "cloud", "pipeline", "model", "algorithm",
     "latency", "scalability", "microservice", "server", "client", "endpoint",
     "testing", "unit test", "integration", "architecture", "framework",
-    "react", "flask", "django", "node", "python", "java", "sql", "nosql"
+    "react", "flask", "django", "node", "python", "java", "sql", "nosql", "nlp",
+    "machine learning", "deep learning", "classification", "regression", "prediction",
+    "training", "dataset", "preprocessing", "feature extraction", "accuracy",
+    "neural network", "transformer", "attention mechanism", "data structure",
+    "algorithm", "time complexity", "space complexity", "big o notation",
+    "concurrency", "parallelism", "asynchronous", "synchronous", "multithreading",
+    "multiprocessing", "distributed system", "load balancing", "caching",
+    "message queue", "event-driven", "serverless", "monolith", "microservices",
+    "life science","bacteria","microorganism","genome","protein","cell","dna","rna","enzyme","metabolism",
 }
 
 IMPLEMENTATION_SIGNALS = {
     "implemented", "built", "designed", "created", "integrated", "configured",
     "optimized", "debugged", "handled", "stored", "validated", "deployed",
-    "tested", "refactored", "connected", "wrote", "used"
+    "tested", "refactored", "connected", "wrote", "used", "developed", "made",
+    "trained", "processed", "collected", "cleaned", "created a", "built a",
+    "designed a", "connected to", "worked with", "added"
 }
 
 DEBUGGING_SIGNALS = {
@@ -48,19 +58,37 @@ TRADEOFF_SIGNALS = {
 OWNERSHIP_SIGNALS = {
     "i built", "i implemented", "i designed", "i created", "i integrated",
     "my role", "i was responsible", "i handled", "i worked on", "i deployed",
-    "i tested", "i fixed"
+    "i tested", "i fixed", "i developed", "i made", "i trained", "i used",
+    "i added", "i created a", "i built a", "my project", "we built",
+    "we implemented", "we developed"
 }
 
 PRODUCTION_SIGNALS = {
     "deploy", "production", "monitoring", "logging", "testing", "ci/cd",
     "security", "scalability", "performance", "availability", "rollback",
-    "environment", "database migration"
+    "environment", "database migration", "hosted", "frontend", "backend",
+    "user", "users", "real time", "workflow", "feature", "features"
 }
 
 KPI_SCHEMA = {
     "communication_skills": "Communication Skills",
     "technical_skills": "Technical Skills",
     "project_understanding": "Project Understanding",
+}
+
+REQUIRED_SUBSCORES = {
+    "technical_skills": (
+        "conceptual_knowledge",
+        "implementation_depth",
+        "tools_and_frameworks",
+        "problem_solving",
+    ),
+    "project_understanding": (
+        "ownership",
+        "feature_understanding",
+        "architecture_or_flow",
+        "practical_constraints",
+    ),
 }
 
 
@@ -93,23 +121,44 @@ def _get_repeated_phrases(words: List[str]) -> int:
 
 
 def _has_video_evidence(video_metrics: VideoAnalysisResult) -> bool:
-    return video_metrics.face_presence >= 0.45 and video_metrics.face_confidence >= 0.45
+    return (
+        video_metrics.frames_analyzed > 0
+        and video_metrics.face_detections > 0
+        and video_metrics.face_presence >= 0.45
+        and video_metrics.face_confidence >= 0.45
+    )
 
 
 def _build_prompt(transcript: str, audio_metrics: Dict[str, float], video_metrics: VideoAnalysisResult) -> str:
-    video_instruction = (
-        "Video evidence is available. You may mention only observable presentation issues if they are directly supported by the metrics."
-        if _has_video_evidence(video_metrics)
-        else "Video evidence is not reliable enough for grooming or professional presence scoring. Do not score or discuss grooming."
-    )
-
     return f"""
-You are a strict technical interviewer and recruiter-system evaluator.
-Evaluate only the candidate evidence in the transcript and the provided audio/video metrics.
-Do not reward buzzword lists unless the candidate explains implementation, ownership, tradeoffs, debugging, APIs, databases, deployment, or architecture.
-Do not infer skills, experience, grooming, confidence, project ownership, or job fit without evidence.
-Be realistic: 5-6 is average/borderline, 7-8 is genuinely good, 9-10 is exceptional and requires strong transcript evidence.
+You are a calibrated technical interviewer and recruiter-system evaluator and multimodel hiring assessor.
+Your task is to evaluate a candidate using Transcript evidence, Audio quality and speaking metrics, and Observable video evidence.
+You MUST behave like a practical recruiter conducting an early-stage technical screening interview, NOT like a senior staff engineer conducting an advanced systems design interview.
+Judge as a practical recruiter screening interview, not as a senior staff-engineer deep dive. Award fair credit for clear conceptual understanding, correct technical vocabulary used in context, implementation ownership, and reasonable explanations even if the candidate does not cover every advanced topic.
+Do not reward buzzword lists unless the candidate explains implementation, ownership, tradeoffs, debugging, APIs, databases, deployment, python, NLP, cybersecurity or architecture.
+Do not infer skills, experience, grooming, visual confidence, project ownership, or job fit without evidence.
+Do not evaluate grooming, clothing, eye contact, posture, or visual professional presence. Those are evaluated separately by OpenCV.
+Be realistic and calibrated to the hiring threshold: 6.0 is acceptable/hireable when the candidate shows usable communication, some practical technical depth, and plausible project ownership. 5.0-5.9 is borderline. 7-8 is genuinely good. 9-10 is exceptional and requires strong transcript evidence.
+VERY IMPORTANT:
 
+Grooming, posture, eye contact, clothing professionalism, environment setup, and visual presentation MUST ONLY be evaluated under the dedicated visual/video evaluation section.
+Technical evaluation MUST come only from transcript/audio evidence.
+If evidence is insufficient, explicitly mark it as "Insufficient Evidence".
+
+SCORING CALIBRATION:
+0-2 = Extremely weak / almost no evidence
+3-4 = Weak / shallow / vague
+5-5.9 = Borderline / incomplete practical understanding
+6-6.9 = Acceptable junior-level competency
+7-8 = Strong practical competency
+9-10 = Exceptional implementation-level understanding
+
+VIDEO SCORING SCALE:
+1 = Poor
+2 = Below Average
+3 = Average
+4 = Good
+5 = Excellent
 Return ONLY valid JSON. No markdown. No extra keys outside this schema:
 {{
   "kpis": {{
@@ -122,6 +171,12 @@ Return ONLY valid JSON. No markdown. No extra keys outside this schema:
     }},
     "technical_skills": {{
       "score": number from 0 to 10,
+      "subscores": {{
+        "conceptual_knowledge": number from 0 to 10,
+        "implementation_depth": number from 0 to 10,
+        "tools_and_frameworks": number from 0 to 10,
+        "problem_solving": number from 0 to 10
+      }},
       "evidence": ["short transcript quote or observation"],
       "strengths": ["specific strength"],
       "weaknesses": ["specific weakness"],
@@ -129,6 +184,12 @@ Return ONLY valid JSON. No markdown. No extra keys outside this schema:
     }},
     "project_understanding": {{
       "score": number from 0 to 10,
+      "subscores": {{
+        "ownership": number from 0 to 10,
+        "feature_understanding": number from 0 to 10,
+        "architecture_or_flow": number from 0 to 10,
+        "practical_constraints": number from 0 to 10
+      }},
       "evidence": ["short transcript quote or observation"],
       "strengths": ["specific strength"],
       "weaknesses": ["specific weakness"],
@@ -146,28 +207,31 @@ Return ONLY valid JSON. No markdown. No extra keys outside this schema:
 Scoring rubric:
 9-10: exceptional production-grade thinking, clear ownership, deep implementation detail.
 7-8: hireable, practical understanding, solid communication, minor gaps.
-5-6: average/borderline, surface-level or incomplete depth.
+6-6.9: acceptable practical competency with some gaps.
+5-5.9: borderline, surface-level or incomplete depth.
 3-4: weak, vague, shallow reasoning, poor articulation.
 0-2: very poor, no meaningful evidence or likely copied/tutorial-level understanding.
 
-Communication assessment must consider clarity, fluency, filler usage, sentence structure, concise speaking, professionalism, and technical articulation.
-Technical assessment must consider implementation depth, APIs/databases, debugging, architecture, deployment/devops, scalability, framework knowledge, and practical problem solving.
-Project understanding must assess whether the candidate appears to have truly built or owned the work, including constraints, tradeoffs, feature reasoning, production readiness, and business awareness.
-{video_instruction}
+Communication assessment must consider clarity, fluency, filler usage, sentence structure, concise speaking, verbal professionalism, and technical articulation.
+Technical assessment:
+- Do not use 6 as a default or safe middle score.
+- First score the four technical subscores from transcript evidence, then set technical_skills.score to their average unless the transcript contains a clear contradiction.
+- Award higher scores when the candidate explains specific implementation flow, tools/frameworks, APIs/databases/models, and practical decisions.
+- Score below 5 when the answer is mostly vague, incorrect, memorized, or disconnected from implementation.
+- Do not require every answer to include debugging, deployment, scalability, and architecture; use those as positive evidence when present.
+
+Project understanding assessment:
+- Do not use 6 as a default or safe middle score.
+- First score the four project subscores from transcript evidence, then set project_understanding.score to their average unless the transcript contains a clear contradiction.
+- Award higher scores when they explain ownership, feature reasoning, constraints, data/API flow, and practical tradeoffs.
+- Score below 3 when ownership is unclear, the explanation sounds copied/tutorial-level, or they cannot explain how the project works.
+- Differentiate incomplete explanation from lack of understanding; mark the former as moderate, not automatically weak.
 
 Audio metrics:
 - duration_seconds: {audio_metrics.get("duration")}
 - energy_score_0_to_1: {audio_metrics.get("energy_score")}
 - clarity_score_0_to_1: {audio_metrics.get("clarity_score")}
 - silence_ratio: {audio_metrics.get("silence_ratio")}
-
-Video metrics:
-- face_presence_0_to_1: {video_metrics.face_presence}
-- face_confidence_0_to_1: {video_metrics.face_confidence}
-- eye_contact_0_to_1: {video_metrics.eye_contact}
-- lighting_0_to_1: {video_metrics.lighting}
-- background_cleanliness_0_to_1: {video_metrics.background_cleanliness}
-- camera_stability_0_to_1: {video_metrics.camera_stability}
 
 Transcript:
 {transcript[:3500]}
@@ -220,6 +284,23 @@ def _require_list(value: object, field_name: str) -> List[str]:
     return [str(item).strip() for item in value if str(item).strip()]
 
 
+def _normalize_subscores(raw_kpi: Dict[str, object], raw_key: str) -> Dict[str, float]:
+    required = REQUIRED_SUBSCORES.get(raw_key)
+    if not required:
+        return {}
+    raw_subscores = raw_kpi.get("subscores")
+    if not isinstance(raw_subscores, dict):
+        raise InvalidLLMOutputError(f"LLM KPI '{raw_key}' must include subscores.")
+
+    normalized = {}
+    for name in required:
+        value = raw_subscores.get(name)
+        if not isinstance(value, (int, float)):
+            raise InvalidLLMOutputError(f"LLM KPI '{raw_key}' subscore '{name}' must be numeric.")
+        normalized[name] = max(0.0, min(10.0, float(value)))
+    return normalized
+
+
 def _normalize_llm_kpis(data: Dict[str, object]) -> Dict[str, Dict[str, object]]:
     if not isinstance(data, dict) or not isinstance(data.get("kpis"), dict):
         raise InvalidLLMOutputError("LLM output must include a 'kpis' object.")
@@ -236,6 +317,10 @@ def _normalize_llm_kpis(data: Dict[str, object]) -> Dict[str, Dict[str, object]]
 
         evidence = _require_list(raw_kpi.get("evidence"), f"{raw_key}.evidence")
         reasoning = raw_kpi.get("reasoning")
+        subscores = _normalize_subscores(raw_kpi, raw_key)
+        if subscores:
+            score = sum(subscores.values()) / len(subscores)
+
         if not evidence:
             raise InvalidLLMOutputError(f"LLM KPI '{raw_key}' must include transcript-grounded evidence.")
         if not isinstance(reasoning, str) or not reasoning.strip():
@@ -247,6 +332,7 @@ def _normalize_llm_kpis(data: Dict[str, object]) -> Dict[str, Dict[str, object]]
             "strengths": _require_list(raw_kpi.get("strengths"), f"{raw_key}.strengths")[:5],
             "weaknesses": _require_list(raw_kpi.get("weaknesses"), f"{raw_key}.weaknesses")[:5],
             "reasoning": reasoning.strip(),
+            "subscores": subscores,
             "available": True,
         }
 
@@ -334,6 +420,10 @@ def evaluate_candidate(transcript: str, audio_path: str, video_path: str) -> dic
             "dressing": video_metrics.dressing if _has_video_evidence(video_metrics) else None,
             "professionalism": video_metrics.professionalism if _has_video_evidence(video_metrics) else None,
             "face_confidence": video_metrics.face_confidence,
+            "frames_sampled": video_metrics.frames_sampled,
+            "frames_analyzed": video_metrics.frames_analyzed,
+            "face_detections": video_metrics.face_detections,
+            "dominant_clothing_color": video_metrics.dominant_clothing_color if _has_video_evidence(video_metrics) else None,
             "professional_presence_available": _has_video_evidence(video_metrics),
         },
         "transcript_metrics": transcript_metrics,
